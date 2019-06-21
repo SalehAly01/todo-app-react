@@ -2,76 +2,51 @@ import React, { Component } from "react";
 import ToDoItem from "./Components/TodoItem";
 import "./css/font-awesome.css";
 import "./css/style.css";
-import { getLocalStorageItem, removeLocalStorageItem, saveToLocalStorage } from "./utilities/localStorageActions.js";
+import { connect } from "react-redux";
+import { addTodo, removeTodo, toggleTodo, clearTodos } from "./actions";
 
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      todo: "",
-      todos: [
-        // { id: "12312", name: "play game", isDone: true }
-      ]
+      todo: ""
     };
-    this.completeTodo = this.completeTodo.bind(this);
   }
 
-  componentDidMount() {
-    let data = getLocalStorageItem("todos");
-    if (data) {
-      this.setState({ todos: data });
-    }
-  }
-
-  addTodo = (e) => {
+  addTodo = e => {
     e.preventDefault();
     if (this.state.todo) {
-      let newTodo = {
-        id: +new Date(),
-        name: this.state.todo,
-        isDone: false
-      };
-      let newList = [...this.state.todos, newTodo];
-      this.setState({ todos: newList, todo: "" });
-      saveToLocalStorage(newList);
+      this.props.newTodo(this.state.todo);
+      this.setState({ todo: "" });
     }
   };
 
-  removeTodo = (id) => {
-    let newList = this.state.todos.filter(todo => todo.id !== id);
-    this.setState({ todos: newList });
-    saveToLocalStorage(newList);
-  }
+  removeTodo = id => {
+    this.props.deleteTodo(id);
+  };
 
-  completeTodo = (id) => {
-    let newList = this.state.todos.map(todo => {
-      if (todo.id === id) {
-        todo.isDone = !todo.isDone;
-      }
-      return todo;
-    });
-    this.setState({ todos: newList });
-    saveToLocalStorage(newList);
-  }
+  completeTodo = event => {
+    const targetId = Number(event.target.id);
+    this.props.toggleTodo(targetId);
+  };
 
   handleTodoInput = e => {
     this.setState({ todo: e.target.value });
   };
 
   clearTodos = () => {
-    this.setState({ todos: [] });
-    removeLocalStorageItem("todos");
+    this.props.clearTodos();
   };
 
   render() {
     let todoItems;
-    todoItems = this.state.todos.map(todo => {
+    todoItems = this.props.todos.map(todo => {
       return (
         <ToDoItem
-        key={todo.id}
-        todo={todo}
-        completeTodo={this.completeTodo}
-        removeTodo ={this.removeTodo}
+          key={todo.id}
+          todo={todo}
+          completeTodo={this.completeTodo}
+          removeTodo={this.removeTodo}
         />
       );
     });
@@ -106,4 +81,18 @@ class App extends Component {
   }
 }
 
-export default App;
+const mapStateToProps = state => ({
+  todos: state.todos
+});
+
+const mapDispatchToProps = dispatch => ({
+  newTodo: name => dispatch(addTodo(name)),
+  deleteTodo: id => dispatch(removeTodo(id)),
+  toggleTodo: id => dispatch(toggleTodo(id)),
+  clearTodos: () => dispatch(clearTodos())
+});
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(App);
